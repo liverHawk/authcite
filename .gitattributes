@@ -1,0 +1,12 @@
+# Files to exclude from release archives (git archive / distribution zip)
+.gitignore export-ignore
+.gitattributes export-ignore
+Dockerfile export-ignore
+compose.yaml export-ignore
+watch.sh export-ignore
+scripts/ export-ignore
+src/ export-ignore
+tests/ export-ignore
+samples/ export-ignore
+authcite-doc.bib export-ignore
+authcite-test.bib export-ignore
