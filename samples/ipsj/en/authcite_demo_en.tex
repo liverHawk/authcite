@@ -1,0 +1,31 @@
+\documentclass[english,preprint,JIP]{ipsj}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage{authcite}
+\authcitesetup{lang=en}
+
+\begin{document}
+
+\title{authcite IPSJ English Style Verification}
+\author{Test User}{1}
+\affiliate{1}{Sample University}
+\maketitle
+
+\section{Introduction}
+Verification of the \texttt{authcite} package with \texttt{authcite-ipsjunsrt-e.bst}
+under the IPSJ English class (\texttt{ipsj.cls}).
+
+\subsection{Citation Examples}
+\begin{itemize}
+  \item Single author (Lamport): \authcite{latex}
+  \item Two authors, default et al. (Itoh et al.): \authcite{article1}
+  \item Two authors, both (Itoh and Goto): \authcite[two=both]{article1}
+  \item Three authors (Goossens et al.): \authcite{companion}
+  \item With others (Foley et al.): \authcite{book1}
+  \item Inverted single author (Baraff): \authcite{inproceedings1}
+\end{itemize}
+
+\bibliographystyle{authcite-ipsjunsrt-e}
+\bibliography{ebibsample}
+
+\end{document}

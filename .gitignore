@@ -9,6 +9,3 @@
 *.out
 *.toc
 
-# Ignore samples on main branch
-samples/
-

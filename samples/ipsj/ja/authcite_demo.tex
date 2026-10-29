@@ -1,0 +1,41 @@
+\documentclass[submit]{ipsj}
+\usepackage{graphicx}
+\usepackage{latexsym}
+\usepackage{authcite}
+
+\begin{document}
+
+\title{authcite 情報処理学会スタイル動作確認}
+\etitle{authcite Verification in IPSJ Style}
+
+\affiliate{JU}{情報処理大学}
+\author{実験 太郎}{Taro Jikken}{JU}
+\maketitle
+
+\section{はじめに}
+本稿では，\texttt{authcite} パッケージを情報処理学会論文誌スタイル（\texttt{ipsj.cls}）
+と \texttt{authcite-ipsjunsrt.bst} に適用した動作確認を行う．
+
+\subsection{引用例（日本語文献）}
+\begin{itemize}
+  \item 1名（桜井）: \authcite{article1}
+  \item 2名・既定（野口ら）: \authcite{article2}
+  \item 2名・連記（野口と大谷）: \authcite[two=both]{article2}
+  \item 3名（田中ら）: \authcite{article4}
+  \item others（田中ら）: \authcite{article6}
+  \item 単著（奥村）: \authcite{okumura}
+\end{itemize}
+
+\subsection{引用例（欧文文献）}
+\begin{itemize}
+  \item 1名（Lamport）: \authcite{latex}
+  \item 2名・既定（Itohら）: \authcite{article3}
+  \item 2名・連記（ItohとGoto）: \authcite[two=both]{article3}
+  \item 英語モード（Lamport [1]）: \authcite[lang=en]{latex}
+  \item 英語モード・2名（Itoh and Goto [3]）: \authcite[lang=en,two=both]{article3}
+\end{itemize}
+
+\bibliographystyle{authcite-ipsjunsrt}
+\bibliography{bibsample}
+
+\end{document}
