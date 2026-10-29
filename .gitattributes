@@ -10,3 +10,4 @@ tests/ export-ignore
 samples/ export-ignore
 authcite-doc.bib export-ignore
 authcite-test.bib export-ignore
+pdf-viewer.html export-ignore
