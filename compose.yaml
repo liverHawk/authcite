@@ -1,0 +1,10 @@
+services:
+  latex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+      - ./watch.sh:/workspace/watch.sh
+    working_dir: /workspace
+    command: /bin/sh -c "/workspace/watch.sh"
