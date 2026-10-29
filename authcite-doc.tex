@@ -153,9 +153,20 @@
 \hline
 \texttt{lang} & \texttt{ja} / \texttt{en} & \texttt{ja} & 助詞・表記言語（ja:「ら」「と」／en:「et al.」「and」） \\
 \texttt{two}  & \texttt{etal} / \texttt{both} & \texttt{etal} & 2名共著の表記（etal: 1人目＋複数語／both: 2名連記） \\
+\texttt{etal} & \texttt{ja} / \texttt{en} / 任意文字列 & - & 複数のときの語を個別指定（例: \texttt{etal=ja}, \texttt{etal=\{ほか\}}） \\
 \hline
 \end{tabular}
 \end{table}
+
+\subsection{便利な省略記法}
+\verb|\authcite| の任意引数には，キー名を省略したシンプルな指定も可能です：
+\begin{itemize}
+  \item \verb|\authcite[ja]{key}|: 複数の語を「ら」にする（\texttt{lang=ja} と同等）
+  \item \verb|\authcite[en]{key}|: 複数の語を「\textit{et al.}」にする（\texttt{lang=en} と同等）
+  \item \verb|\authcite[both]{key}|: 2名共著を連記する（\texttt{two=both} と同等）
+  \item \verb|\authcite[en,both]{key}|: 英語かつ連記（「Du and Gu [2]」）
+  \item \verb|\authcite[etal={ほか}]{key}|: 複数の語を任意の単語「ほか」に置き換え
+\end{itemize}
 
 \section{コンパイルの流れ}
 \textsf{authcite} は \textsf{natbib} と同様，Bib\TeX 出力（\texttt{.bbl}）と \texttt{.aux} を介して著者名を受け渡します．

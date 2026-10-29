@@ -2,21 +2,26 @@
 %% LaTeX package for author-prefixed citation (\authcite)
 %%
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{authcite}[2026/10/29 v1.0 Author-prefixed citation package]
+\ProvidesPackage{authcite}[2026/10/29 v1.1 Author-prefixed citation package]
 
 \RequirePackage{keyval}
 
 %% Ensure \newblock is defined (needed by some older document classes like ipsj.cls)
 \providecommand{\newblock}{}
 
-%% --- Flag definitions ---
+%% --- Flag and value definitions ---
 \newif\ifauthc@en
 \newif\ifauthc@both
 \newif\ifauthc@local@en
 \newif\ifauthc@local@both
 
 \def\authc@val@en{en}
+\def\authc@val@ja{ja}
 \def\authc@val@both{both}
+\def\authc@val@etal{etal}
+
+\def\authc@custom@etal{}
+\def\authc@local@custom@etal{}
 
 %% --- Global key-value options ---
 \define@key{authcite}{lang}{%
@@ -34,6 +39,25 @@
   \else
     \authc@bothfalse
   \fi
+}
+
+%% Shorthands and etal word customization for global setup
+\define@key{authcite}{ja}[]{\authc@enfalse}
+\define@key{authcite}{en}[]{\authc@entrue}
+\define@key{authcite}{both}[]{\authc@bothtrue}
+\define@key{authcite}{etal}[etal]{%
+  \def\authc@opt@arg{#1}%
+  \ifx\authc@opt@arg\authc@val@etal
+    \authc@bothfalse
+  \else\ifx\authc@opt@arg\authc@val@ja
+    \authc@enfalse
+    \def\authc@custom@etal{ら}%
+  \else\ifx\authc@opt@arg\authc@val@en
+    \authc@entrue
+    \def\authc@custom@etal{et al.}%
+  \else
+    \def\authc@custom@etal{#1}%
+  \fi\fi\fi
 }
 
 %% Global setup command
@@ -82,6 +106,34 @@
   \fi
 }
 
+%% Shorthands for \authcite: [ja], [en], [both], [etal=...]
+\define@key{authcite@local}{ja}[]{\authc@local@enfalse}
+\define@key{authcite@local}{en}[]{\authc@local@entrue}
+\define@key{authcite@local}{both}[]{\authc@local@bothtrue}
+\define@key{authcite@local}{etal}[etal]{%
+  \def\authc@opt@arg{#1}%
+  \ifx\authc@opt@arg\authc@val@etal
+    \authc@local@bothfalse
+  \else\ifx\authc@opt@arg\authc@val@ja
+    \authc@local@enfalse
+    \def\authc@local@custom@etal{ら}%
+  \else\ifx\authc@opt@arg\authc@val@en
+    \authc@local@entrue
+    \def\authc@local@custom@etal{et al.}%
+  \else
+    \def\authc@local@custom@etal{#1}%
+  \fi\fi\fi
+}
+
+%% --- Helper to resolve "et al." / "ら" string ---
+\def\authc@get@etal{%
+  \ifx\authc@local@custom@etal\@empty
+    \ifauthc@local@en et al.\else ら\fi
+  \else
+    \authc@local@custom@etal
+  \fi
+}
+
 %% --- Formatting helpers for each author count ---
 \def\authc@format@zero#1{%
   \cite{#1}%
@@ -102,14 +154,14 @@
     \cite{#1}%
   \else
     \authc@first
-    \ifauthc@local@en\ et al.~\else ら\fi
+    \ifauthc@local@en\ \authc@get@etal~\else\authc@get@etal\fi
     \cite{#1}%
   \fi
 }
 
 \def\authc@format@many#1{%
   \authc@first
-  \ifauthc@local@en\ et al.~\else ら\fi
+  \ifauthc@local@en\ \authc@get@etal~\else\authc@get@etal\fi
   \cite{#1}%
 }
 
@@ -118,6 +170,7 @@
   \begingroup
   \ifauthc@en \authc@local@entrue \else \authc@local@enfalse \fi
   \ifauthc@both \authc@local@bothtrue \else \authc@local@bothfalse \fi
+  \let\authc@local@custom@etal\authc@custom@etal
   \if\relax\detokenize{#1}\relax\else
     \setkeys{authcite@local}{#1}%
   \fi

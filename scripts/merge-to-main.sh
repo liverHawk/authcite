@@ -31,3 +31,4 @@ else
   git commit -m "Merge branch 'dev' into main (excluding samples/)"
   echo "Successfully merged dev into main without samples/!"
 fi
+
