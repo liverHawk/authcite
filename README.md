@@ -67,12 +67,21 @@ mktexlsr $(kpsewhich -var-value TEXMFHOME)
 % 基本引用（既定: 日本語なら「Duら[1]」、英語なら「Du et al. [1]」）
 \authcite{du2021}
 
+% 複数の語の言語を指定（ja -> 「ら」、en -> 「et al.」）
+\authcite[lang=ja]{du2021}   % Duら[1]
+\authcite[lang=en]{du2021}   % Du et al. [1]
+
+% 省略記法（キー名を省略して直接指定可能）
+\authcite[ja]{du2021}        % Duら[1]
+\authcite[en]{du2021}        % Du et al. [1]
+
 % 2人共著を連記（日本語「DuとGu[1]」、英語「Du and Gu [1]」）
 \authcite[two=both]{du2021}
+\authcite[both]{du2021}      % 省略記法
 
-% 局所的に言語を切り替え
-\authcite[lang=en]{du2021}
-\authcite[lang=en,two=both]{du2021}
+% 組み合わせ
+\authcite[en, both]{du2021}  % Du and Gu [1]
+\authcite[etal={ほか}]{du2021} % 任意の語にカスタマイズ
 ```
 
 ### 3. 文献リストの指定
@@ -91,6 +100,10 @@ mktexlsr $(kpsewhich -var-value TEXMFHOME)
 |---|---|---|---|
 | `lang` | `ja` / `en` | `ja` | 助詞・言語設定。`ja` は「ら」「と」、`en` は「et al.」「and」 |
 | `two`  | `etal` / `both` | `etal` | 2人共著の表記。`etal` は「1人目＋ら/et al.」、`both` は2名連記 |
+| `etal` | `ja` / `en` / 任意文字列 | - | 複数のときの語を個別指定（`etal=ja`, `etal={ほか}` など） |
+| `ja`   | （値なし） | - | `lang=ja` の省略記法（複数の語を「ら」にする） |
+| `en`   | （値なし） | - | `lang=en` の省略記法（複数の語を「et al.」にする） |
+| `both` | （値なし） | - | `two=both` の省略記法（2人共著を連記する） |
 
 ---
 

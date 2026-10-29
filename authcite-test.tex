@@ -45,21 +45,25 @@
   \item 著者なし [期待値: [5]]: \authcite{manual2024}
 \end{itemize}
 
-\subsection*{2. 2人共著連記 (two=both)}
+\subsection*{2. 2人共著連記 (two=both / both)}
 \begin{itemize}
-  \item 2人連記 [期待値: DuとGu[2]]: \authcite[two=both]{du2021}
+  \item two=both [期待値: DuとGu[2]]: \authcite[two=both]{du2021}
+  \item 省略形 both [期待値: DuとGu[2]]: \authcite[both]{du2021}
 \end{itemize}
 
-\subsection*{3. 英語オプション (lang=en)}
+\subsection*{3. 言語指定オプション (lang=... / 省略形 / etal=...)}
 \begin{itemize}
-  \item 1人英語 [期待値: Hosseini [1]]: \authcite[lang=en]{hosseini2020}
-  \item 2人英語 [期待値: Du et al. [2]]: \authcite[lang=en]{du2021}
-  \item 2人連記英語 [期待値: Du and Gu [2]]: \authcite[lang=en,two=both]{du2021}
-  \item 3人英語 [期待値: Smith et al. [3]]: \authcite[lang=en]{smith2022}
+  \item lang=ja [期待値: Duら[2]]: \authcite[lang=ja]{du2021}
+  \item lang=en [期待値: Du et al. [2]]: \authcite[lang=en]{du2021}
+  \item 省略形 ja [期待値: Duら[2]]: \authcite[ja]{du2021}
+  \item 省略形 en [期待値: Du et al. [2]]: \authcite[en]{du2021}
+  \item etal=ja [期待値: Duら[2]]: \authcite[etal=ja]{du2021}
+  \item etal=en [期待値: Du et al. [2]]: \authcite[etal=en]{du2021}
+  \item 組み合わせ en + both [期待値: Du and Gu [2]]: \authcite[en,both]{du2021}
+  \item 任意単語 etal={ほか} [期待値: Duほか[2]]: \authcite[etal={ほか}]{du2021}
 \end{itemize}
 
 \bibliographystyle{authcite}
 \bibliography{\jobname}
 
 \end{document}
-
