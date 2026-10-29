@@ -1,0 +1,143 @@
+%% authcite.sty
+%% LaTeX package for author-prefixed citation (\authcite)
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{authcite}[2026/10/29 v1.0 Author-prefixed citation package]
+
+\RequirePackage{keyval}
+
+%% Ensure \newblock is defined (needed by some older document classes like ipsj.cls)
+\providecommand{\newblock}{}
+
+%% --- Flag definitions ---
+\newif\ifauthc@en
+\newif\ifauthc@both
+\newif\ifauthc@local@en
+\newif\ifauthc@local@both
+
+\def\authc@val@en{en}
+\def\authc@val@both{both}
+
+%% --- Global key-value options ---
+\define@key{authcite}{lang}{%
+  \def\authc@opt@arg{#1}%
+  \ifx\authc@opt@arg\authc@val@en
+    \authc@entrue
+  \else
+    \authc@enfalse
+  \fi
+}
+\define@key{authcite}{two}{%
+  \def\authc@opt@arg{#1}%
+  \ifx\authc@opt@arg\authc@val@both
+    \authc@bothtrue
+  \else
+    \authc@bothfalse
+  \fi
+}
+
+%% Global setup command
+\newcommand{\authcitesetup}[1]{%
+  \setkeys{authcite}{#1}%
+}
+
+%% Default global settings (lang=ja, two=etal)
+\authc@enfalse
+\authc@bothfalse
+
+%% Package options
+\DeclareOption*{%
+  \expandafter\authcitesetup\expandafter{\CurrentOption}%
+}
+\ProcessOptions\relax
+
+%% --- Data communication between .bbl, .aux, and document ---
+\newcommand{\authciteentry}[4]{%
+  \if@filesw
+    \immediate\write\@auxout{\string\authcdata{#1}{#2}{#3}{#4}}%
+  \fi
+}
+
+\newcommand{\authcdata}[4]{%
+  \global\@namedef{authc@count@#1}{#2}%
+  \global\@namedef{authc@first@#1}{#3}%
+  \global\@namedef{authc@second@#1}{#4}%
+}
+
+%% --- Local options ---
+\define@key{authcite@local}{lang}{%
+  \def\authc@opt@arg{#1}%
+  \ifx\authc@opt@arg\authc@val@en
+    \authc@local@entrue
+  \else
+    \authc@local@enfalse
+  \fi
+}
+\define@key{authcite@local}{two}{%
+  \def\authc@opt@arg{#1}%
+  \ifx\authc@opt@arg\authc@val@both
+    \authc@local@bothtrue
+  \else
+    \authc@local@bothfalse
+  \fi
+}
+
+%% --- Formatting helpers for each author count ---
+\def\authc@format@zero#1{%
+  \cite{#1}%
+}
+
+\def\authc@format@one#1{%
+  \authc@first
+  \ifauthc@local@en~\fi
+  \cite{#1}%
+}
+
+\def\authc@format@two#1{%
+  \ifauthc@local@both
+    \authc@first
+    \ifauthc@local@en\ and\ \else と\fi
+    \authc@second
+    \ifauthc@local@en~\fi
+    \cite{#1}%
+  \else
+    \authc@first
+    \ifauthc@local@en\ et al.~\else ら\fi
+    \cite{#1}%
+  \fi
+}
+
+\def\authc@format@many#1{%
+  \authc@first
+  \ifauthc@local@en\ et al.~\else ら\fi
+  \cite{#1}%
+}
+
+%% --- Core \authcite command ---
+\newcommand{\authcite}[2][]{%
+  \begingroup
+  \ifauthc@en \authc@local@entrue \else \authc@local@enfalse \fi
+  \ifauthc@both \authc@local@bothtrue \else \authc@local@bothfalse \fi
+  \if\relax\detokenize{#1}\relax\else
+    \setkeys{authcite@local}{#1}%
+  \fi
+  \@ifundefined{authc@count@#2}{%
+    ?\cite{#2}%
+  }{%
+    \edef\authc@cnt{\@nameuse{authc@count@#2}}%
+    \edef\authc@first{\@nameuse{authc@first@#2}}%
+    \edef\authc@second{\@nameuse{authc@second@#2}}%
+    \ifcase\authc@cnt\relax
+      \authc@format@zero{#2}% count = 0
+    \or
+      \authc@format@one{#2}% count = 1
+    \or
+      \authc@format@two{#2}% count = 2
+    \else
+      \authc@format@many{#2}% count >= 3
+    \fi
+  }%
+  \endgroup
+}
+
+\endinput

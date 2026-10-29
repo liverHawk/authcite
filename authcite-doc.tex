@@ -1,0 +1,175 @@
+\begin{filecontents*}{\jobname.bib}
+@article{hosseini2020,
+  author  = {Hosseini, Seyed},
+  title   = {Single Author Study on Software Verification},
+  journal = {Journal of Systems},
+  year    = {2020},
+  volume  = {10},
+  pages   = {100--110}
+}
+@article{du2021,
+  author  = {Du, Wei and Gu, Chen},
+  title   = {Collaborative Systems with Two Authors},
+  journal = {Communications of ACM},
+  year    = {2021},
+  volume  = {20},
+  pages   = {200--215}
+}
+@article{smith2022,
+  author  = {Smith, John and Jones, Alice and Brown, Bob},
+  title   = {Scalable Algorithms for Modern Networks},
+  journal = {IEEE Transactions on Computers},
+  year    = {2022},
+  volume  = {30},
+  pages   = {300--320}
+}
+@article{lee2023,
+  author  = {Lee, Min and others},
+  title   = {Large-Scale Experimental Evaluation},
+  journal = {ACM Computing Surveys},
+  year    = {2023},
+  volume  = {40},
+  pages   = {400--420}
+}
+@article{dimonda2025,
+  author  = {Di Monda, Marco},
+  title   = {On Compound Surnames in Citation Systems},
+  journal = {Journal of Documentation},
+  year    = {2025},
+  volume  = {50},
+  pages   = {500--515}
+}
+@manual{manual2024,
+  title        = {Antigravity System Manual},
+  organization = {Open Tools Project},
+  year         = {2024}
+}
+@article{yamada2020,
+  author  = {山田 太郎},
+  title   = {日本語単著論文の引用表記法},
+  journal = {情報処理学会論文誌},
+  year    = {2020},
+  volume  = {61},
+  number  = {1},
+  pages   = {1--8}
+}
+@article{sato2021,
+  author  = {佐藤 一郎 and 鈴木 二郎},
+  title   = {共著論文における連記表現の分析},
+  journal = {情報処理学会論文誌},
+  year    = {2021},
+  volume  = {62},
+  number  = {2},
+  pages   = {9--16}
+}
+\end{filecontents*}
+
+\documentclass[uplatex]{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{authcite}
+\usepackage{url}
+
+\title{\textsf{authcite} パッケージ\\取扱説明書兼サンプル文書}
+\author{\texttt{authcite} 開発チーム}
+\date{2026年10月29日 (v1.0)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\textsf{authcite} は，\LaTeX において文献参照コマンド \verb|\cite| の直前に著者名（姓）を自動付与するパッケージです．
+手動で「〇〇ら」と入力する手間を省き，文献データベース（Bib\TeX）から著者数や姓を正確に抽出して整形します．
+日本語（「〜ら」「〜と〜」）および英語（「\textit{et al.}」「and」）の両方に対応し，2人共著の表記（省略または連記）も柔軟に切り替え可能です．
+\end{abstract}
+
+\section{はじめに}
+学術論文や技術文書では，文献番号だけでなく「Hosseini[1]によれば」「Duら[2]の研究では」のように，
+筆頭著者名を添えて引用するスタイルが広く用いられます．
+しかし，著者の人数（1名，2名，3名以上）や表記規則（英語の \textit{et al.}，日本語の「ら」や連記）を手動で管理すると，
+表記揺れや誤記の原因となります．
+
+\textsf{authcite} は，Bib\TeX スタイルファイル（\texttt{authcite.bst}）と連携し，
+引用キーから自動的に著者情報を取得して統一された書式で出力します．
+
+\section{インストールと準備}
+\subsection{必要ファイル}
+\begin{itemize}
+  \item \texttt{authcite.sty}: \LaTeX パッケージ本体
+  \item \texttt{authcite.bst}: Bib\TeX スタイルファイル（標準 \texttt{unsrt.bst} ベース）
+\end{itemize}
+これらのファイルを執筆対象の \texttt{.tex} ファイルと同じディレクトリ，
+または \TeX システムの検索パス（\texttt{TEXINPUTS} / \texttt{BSTINPUTS}）に配置してください．
+
+\subsection{文書での指定}
+\begin{verbatim}
+\documentclass{...}
+\usepackage{authcite}
+
+\begin{document}
+...
+\bibliographystyle{authcite}
+\bibliography{your_bib_file}
+\end{document}
+\end{verbatim}
+
+\section{使い方と出力例}
+
+\subsection{基本コマンド}
+本文中では \verb|\authcite{key}| を使用します．
+\begin{itemize}
+  \item \textbf{単著 (1人)}: \authcite{hosseini2020}（コード: \verb|\authcite{hosseini2020}|）
+  \item \textbf{2人共著 (既定)}: \authcite{du2021}（コード: \verb|\authcite{du2021}|）
+  \item \textbf{3人以上}: \authcite{smith2022}（コード: \verb|\authcite{smith2022}|）
+  \item \textbf{others 含む}: \authcite{lee2023}（コード: \verb|\authcite{lee2023}|）
+  \item \textbf{複合姓}: \authcite{dimonda2025}（コード: \verb|\authcite{dimonda2025}|）
+  \item \textbf{著者なし}: \authcite{manual2024}（コード: \verb|\authcite{manual2024}|）
+\end{itemize}
+
+\subsection{2人共著の連記 (\texttt{two=both})}
+2人共著の場合，学術機関や学会の執筆要領（情報処理学会など）によっては「〜ら」と省略せず，
+両名を連記することが推奨されます．
+オプション \texttt{two=both} を指定すると，2名とも表示されます：
+\begin{itemize}
+  \item 欧文2名連記: \authcite[two=both]{du2021}（コード: \verb|\authcite[two=both]{du2021}|）
+  \item 全体の既定値を連記に設定したい場合は，プリアンブルで \verb|\authcitesetup{two=both}| を指定します．
+\end{itemize}
+
+\subsection{英語モード (\texttt{lang=en})}
+英語論文，または英語での引用箇所では \texttt{lang=en} を指定します：
+\begin{itemize}
+  \item 単著 (en): \authcite[lang=en]{hosseini2020}（コード: \verb|\authcite[lang=en]{hosseini2020}|）
+  \item 2名 et al. (en): \authcite[lang=en]{du2021}（コード: \verb|\authcite[lang=en]{du2021}|）
+  \item 2名 連記 (en): \authcite[lang=en,two=both]{du2021}（コード: \verb|\authcite[lang=en,two=both]{du2021}|）
+  \item 3名 (en): \authcite[lang=en]{smith2022}（コード: \verb|\authcite[lang=en]{smith2022}|）
+\end{itemize}
+
+\section{オプション仕様}
+\begin{table}[htbp]
+\centering
+\caption{設定オプション一覧}
+\begin{tabular}{llll}
+\hline
+キー & 設定値 & 既定値 & 説明 \\
+\hline
+\texttt{lang} & \texttt{ja} / \texttt{en} & \texttt{ja} & 助詞・表記言語（ja:「ら」「と」／en:「et al.」「and」） \\
+\texttt{two}  & \texttt{etal} / \texttt{both} & \texttt{etal} & 2名共著の表記（etal: 1人目＋複数語／both: 2名連記） \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{コンパイルの流れ}
+\textsf{authcite} は \textsf{natbib} と同様，Bib\TeX 出力（\texttt{.bbl}）と \texttt{.aux} を介して著者名を受け渡します．
+そのため，文書を完全に組版するには以下の順序でコンパイルしてください：
+\begin{enumerate}
+  \item \texttt{platex} (または \texttt{uplatex})：\texttt{.aux} に引用キーを書き出し
+  \item \texttt{pbibtex} (または \texttt{upbibtex})：\texttt{.bbl} に \verb|\authciteentry| を生成
+  \item \texttt{platex}：\texttt{.bbl} を読み込み，\texttt{.aux} に著者情報を登録
+  \item \texttt{platex}：\texttt{.aux} から著者情報を反映して最終組版
+\end{enumerate}
+※ \texttt{latexmk} 等のビルドツールを使用している場合は自動的に解決されます．
+
+\bibliographystyle{authcite}
+\bibliography{\jobname}
+
+\end{document}
+

@@ -1,0 +1,65 @@
+\begin{filecontents*}{\jobname.bib}
+@article{hosseini2020,
+  author  = {Hosseini, Seyed},
+  title   = {Single Author Paper},
+  journal = {Journal of Testing},
+  year    = {2020}
+}
+@article{du2021,
+  author  = {Du, Wei and Gu, Chen},
+  title   = {Two Authors Paper},
+  journal = {Journal of Testing},
+  year    = {2021}
+}
+@article{smith2022,
+  author  = {Smith, John and Jones, Alice and Brown, Bob},
+  title   = {Three Authors Paper},
+  journal = {Journal of Testing},
+  year    = {2022}
+}
+@article{lee2023,
+  author  = {Lee, Min and others},
+  title   = {Paper with Others},
+  journal = {Journal of Testing},
+  year    = {2023}
+}
+@manual{manual2024,
+  title   = {Tool Manual without Author},
+  year    = {2024}
+}
+\end{filecontents*}
+
+\documentclass[uplatex]{jsarticle}
+\usepackage{authcite}
+
+\begin{document}
+
+\section*{authcite 動作確認テスト (authcite-test)}
+
+\subsection*{1. 既定の挙動 (lang=ja, two=etal)}
+\begin{itemize}
+  \item 1人著者 [期待値: Hosseini[1]]: \authcite{hosseini2020}
+  \item 2人著者 [期待値: Duら[2]]: \authcite{du2021}
+  \item 3人著者 [期待値: Smithら[3]]: \authcite{smith2022}
+  \item others  [期待値: Leeら[4]]: \authcite{lee2023}
+  \item 著者なし [期待値: [5]]: \authcite{manual2024}
+\end{itemize}
+
+\subsection*{2. 2人共著連記 (two=both)}
+\begin{itemize}
+  \item 2人連記 [期待値: DuとGu[2]]: \authcite[two=both]{du2021}
+\end{itemize}
+
+\subsection*{3. 英語オプション (lang=en)}
+\begin{itemize}
+  \item 1人英語 [期待値: Hosseini [1]]: \authcite[lang=en]{hosseini2020}
+  \item 2人英語 [期待値: Du et al. [2]]: \authcite[lang=en]{du2021}
+  \item 2人連記英語 [期待値: Du and Gu [2]]: \authcite[lang=en,two=both]{du2021}
+  \item 3人英語 [期待値: Smith et al. [3]]: \authcite[lang=en]{smith2022}
+\end{itemize}
+
+\bibliographystyle{authcite}
+\bibliography{\jobname}
+
+\end{document}
+

@@ -1,0 +1,39 @@
+\documentclass[uplatex]{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{authcite}
+
+\begin{document}
+
+\section*{authcite 日本語環境テスト (test\_ja)}
+
+\subsection*{1. デフォルト設定 (lang=ja, two=etal)}
+\begin{itemize}
+  \item 1人 (Hosseini): \authcite{hosseini2020}
+  \item 2人 (Du etal): \authcite{du2021}
+  \item 3人 (Smith): \authcite{smith2022}
+  \item others (Lee): \authcite{lee2023}
+  \item 複合姓 (Di Monda): \authcite{dimonda2025}
+  \item 著者なし (Manual): \authcite{manual2024}
+  \item 日本語1人 (山田): \authcite{yamada2020}
+  \item 日本語2人 (佐藤・鈴木 etal): \authcite{sato2021}
+  \item 日本語3人 (高橋): \authcite{takahashi2022}
+\end{itemize}
+
+\subsection*{2. 2人共著 both 指定 (two=both)}
+\begin{itemize}
+  \item 欧文2人 (DuとGu): \authcite[two=both]{du2021}
+  \item 日本語2人 (佐藤と鈴木): \authcite[two=both]{sato2021}
+\end{itemize}
+
+\subsection*{3. 英語オプション指定 (lang=en)}
+\begin{itemize}
+  \item 1人 (Hosseini): \authcite[lang=en]{hosseini2020}
+  \item 2人 etal (Du et al.): \authcite[lang=en]{du2021}
+  \item 2人 both (Du and Gu): \authcite[lang=en,two=both]{du2021}
+  \item 3人 (Smith et al.): \authcite[lang=en]{smith2022}
+\end{itemize}
+
+\bibliographystyle{authcite}
+\bibliography{reference}
+
+\end{document}

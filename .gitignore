@@ -1,0 +1,14 @@
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.out
+*.toc
+
+# Ignore samples on main branch
+samples/
+

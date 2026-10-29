@@ -1,0 +1,36 @@
+\documentclass{article}
+\usepackage{authcite}
+\authcitesetup{lang=en}
+
+\begin{document}
+
+\section*{authcite English Environment Test (test\_en)}
+
+\subsection*{1. Default English settings (lang=en, two=etal)}
+\begin{itemize}
+  \item Single author (Hosseini): \authcite{hosseini2020}
+  \item Two authors (Du et al.): \authcite{du2021}
+  \item Three authors (Smith et al.): \authcite{smith2022}
+  \item Others (Lee et al.): \authcite{lee2023}
+  \item Compound surname (Di Monda): \authcite{dimonda2025}
+  \item Anonymous (Manual): \authcite{manual2024}
+\end{itemize}
+
+\subsection*{2. Two authors both (two=both)}
+\begin{itemize}
+  \item Two authors both (Du and Gu): \authcite[two=both]{du2021}
+\end{itemize}
+
+\subsection*{3. Local override to Japanese (lang=ja)}
+\begin{itemize}
+  \item Single author ja: \authcite[lang=ja]{hosseini2020}
+  \item Two authors ja: \authcite[lang=ja]{du2021}
+  \item Two authors ja both: \authcite[lang=ja,two=both]{du2021}
+  \item Three authors ja: \authcite[lang=ja]{smith2022}
+\end{itemize}
+
+\bibliographystyle{authcite}
+\bibliography{reference}
+
+\end{document}
+
