@@ -8,6 +8,32 @@ TARGET="${1:-test}"
 export TEXINPUTS=".:/workspace/src//:${TEXINPUTS:-}"
 export BSTINPUTS=".:/workspace/src//:${BSTINPUTS:-}"
 
+normalize_pdf() {
+  PDF_FILE="$1"
+  if [ -f "$PDF_FILE" ] && command -v pdftocairo >/dev/null 2>&1; then
+    pdftocairo -pdf "$PDF_FILE" "${PDF_FILE}.tmp" && mv "${PDF_FILE}.tmp" "$PDF_FILE"
+  fi
+}
+
+run_doc() {
+  echo "=== Building Root Docs (authcite-doc & authcite-test) ==="
+  cd /workspace
+  uplatex -interaction=nonstopmode authcite-doc.tex || true
+  upbibtex authcite-doc
+  uplatex -interaction=nonstopmode authcite-doc.tex
+  uplatex -interaction=nonstopmode authcite-doc.tex
+  dvipdfmx authcite-doc.dvi
+  normalize_pdf authcite-doc.pdf
+
+  uplatex -interaction=nonstopmode authcite-test.tex || true
+  upbibtex authcite-test
+  uplatex -interaction=nonstopmode authcite-test.tex
+  uplatex -interaction=nonstopmode authcite-test.tex
+  dvipdfmx authcite-test.dvi
+  normalize_pdf authcite-test.pdf
+  echo "=== Root Docs completed ==="
+}
+
 run_test() {
   echo "=== Running Tests (tests/) ==="
   cd /workspace/tests
@@ -26,6 +52,7 @@ run_test() {
 
   echo "--- DVI to PDF (test_ja) ---"
   dvipdfmx test_ja.dvi
+  normalize_pdf test_ja.pdf
 
   echo "--- 1st LaTeX pass (test_en) ---"
   uplatex -interaction=nonstopmode test_en.tex || true
@@ -41,6 +68,7 @@ run_test() {
 
   echo "--- DVI to PDF (test_en) ---"
   dvipdfmx test_en.dvi
+  normalize_pdf test_en.pdf
 
   echo "=== Tests completed successfully ==="
 }
@@ -53,6 +81,7 @@ run_ja() {
   platex -interaction=nonstopmode authcite_demo.tex
   platex -interaction=nonstopmode authcite_demo.tex
   dvipdfmx authcite_demo.dvi
+  normalize_pdf authcite_demo.pdf
   echo "=== IPSJ Japanese Sample completed ==="
 }
 
@@ -64,10 +93,14 @@ run_en() {
   platex -interaction=nonstopmode authcite_demo_en.tex
   platex -interaction=nonstopmode authcite_demo_en.tex
   dvipdfmx authcite_demo_en.dvi
+  normalize_pdf authcite_demo_en.pdf
   echo "=== IPSJ English Sample completed ==="
 }
 
 case "$TARGET" in
+  doc)
+    run_doc
+    ;;
   test)
     run_test
     ;;
@@ -78,6 +111,7 @@ case "$TARGET" in
     run_en
     ;;
   all)
+    run_doc
     run_test
     run_ja
     run_en
