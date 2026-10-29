@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>authcite 日本語対応 PDF ビューア</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    .viewer-scroll {
+      scroll-behavior: smooth;
+    }
+    .page-canvas-shadow {
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.18), 0 2px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .thumb-active {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    mark.search-hit {
+      background-color: rgba(250, 204, 21, 0.45);
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased select-none flex flex-col h-screen w-screen overflow-hidden">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-[var(--card)] border-b border-[var(--border)] px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0 z-20">
+    <!-- Left: Sidebar Toggle & Document Selector -->
+    <div class="flex items-center gap-2 min-w-0 flex-1">
+      <button
+        id="btn-toggle-sidebar"
+        type="button"
+        title="サイドバー表示切替 (B)"
+        class="p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition flex items-center justify-center shrink-0"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <line x1="9" y1="4" x2="9" y2="20" />
+        </svg>
+      </button>
+
+      <div class="relative min-w-0 flex-1 max-w-md">
+        <select
+          id="doc-select"
+          aria-label="表示するPDFファイルを選択"
+          class="w-full text-xs sm:text-sm font-medium bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-lg px-3 py-1.5 pr-8 truncate focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+        ></select>
+      </div>
+
+      <span
+        id="doc-meta-badge"
+        class="hidden lg:inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--secondary)] text-[var(--muted-foreground)] shrink-0"
+      ></span>
+    </div>
+
+    <!-- Center: View Mode & Page Controls -->
+    <div class="flex items-center gap-1.5 bg-[var(--background)] border border-[var(--border)] rounded-lg p-1 shrink-0">
+      <!-- Mode Toggle Buttons -->
+      <button
+        id="btn-mode-scroll"
+        type="button"
+        title="縦スクロール連続表示 (M)"
+        class="px-2.5 py-1 rounded-md text-xs font-medium transition flex items-center gap-1"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="5" y="2" width="14" height="9" rx="1" />
+          <rect x="5" y="13" width="14" height="9" rx="1" />
+        </svg>
+        <span>連続</span>
+      </button>
+      <button
+        id="btn-mode-single"
+        type="button"
+        title="1ページ送り表示 (M)"
+        class="px-2.5 py-1 rounded-md text-xs font-medium transition flex items-center gap-1"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="5" y="3" width="14" height="18" rx="2" />
+        </svg>
+        <span>単頁</span>
+      </button>
+
+      <div class="h-4 w-px bg-[var(--border)] mx-1"></div>
+
+      <!-- Page Stepper -->
+      <button
+        id="btn-prev-page"
+        type="button"
+        title="前のページ (←)"
+        class="p-1 rounded hover:bg-[var(--secondary)] text-[var(--foreground)] disabled:opacity-40 disabled:pointer-events-none transition"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
+      <div class="flex items-center gap-1 text-xs font-medium px-1">
+        <input
+          id="input-page-num"
+          type="number"
+          min="1"
+          value="1"
+          aria-label="ページ番号"
+          class="w-11 text-center bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+        />
+        <span class="text-[var(--muted-foreground)]">/</span>
+        <span id="label-total-pages" class="text-[var(--muted-foreground)] min-w-[1.25rem] text-center">1</span>
+      </div>
+
+      <button
+        id="btn-next-page"
+        type="button"
+        title="次のページ (→)"
+        class="p-1 rounded hover:bg-[var(--secondary)] text-[var(--foreground)] disabled:opacity-40 disabled:pointer-events-none transition"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Right: Zoom Controls & Text Search Toggle -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <div class="flex items-center gap-1 bg-[var(--background)] border border-[var(--border)] rounded-lg p-1">
+        <button
+          id="btn-zoom-out"
+          type="button"
+          title="縮小 (-)"
+          class="p-1 rounded hover:bg-[var(--secondary)] text-[var(--foreground)] transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+
+        <select
+          id="select-zoom"
+          aria-label="表示倍率"
+          class="bg-transparent text-[var(--foreground)] text-xs font-medium px-1.5 py-0.5 rounded focus:outline-none cursor-pointer"
+        >
+          <option value="fit-width">幅に合わせる</option>
+          <option value="fit-page">ページ全体</option>
+          <option value="0.75">75%</option>
+          <option value="1">100%</option>
+          <option value="1.25">125%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
+        </select>
+
+        <button
+          id="btn-zoom-in"
+          type="button"
+          title="拡大 (+)"
+          class="p-1 rounded hover:bg-[var(--secondary)] text-[var(--foreground)] transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+      </div>
+
+      <button
+        id="btn-toggle-text"
+        type="button"
+        title="日本語テキスト抽出・検索パネル (T)"
+        class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs font-medium transition flex items-center gap-1.5"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <span class="hidden sm:inline">テキスト・検索</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <div class="flex flex-1 min-h-0 overflow-hidden relative">
+
+    <!-- Left Sidebar: Thumbnails & Document List -->
+    <aside
+      id="left-sidebar"
+      class="w-64 bg-[var(--sidebar)] border-r border-[var(--border)] flex flex-col shrink-0 transition-all duration-200 overflow-hidden"
+    >
+      <!-- Sidebar Tabs -->
+      <div class="grid grid-cols-2 border-b border-[var(--border)] p-1.5 gap-1 bg-[var(--card)] shrink-0">
+        <button
+          id="tab-btn-thumbs"
+          type="button"
+          class="py-1.5 px-2 rounded-md text-xs font-semibold transition text-center"
+        >
+          サムネイル
+        </button>
+        <button
+          id="tab-btn-docs"
+          type="button"
+          class="py-1.5 px-2 rounded-md text-xs font-semibold transition text-center"
+        >
+          PDF一覧
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Thumbnails -->
+      <div id="sidebar-panel-thumbs" class="flex-1 overflow-y-auto p-3 space-y-3"></div>
+
+      <!-- Tab Content 2: Document List & Custom Loader -->
+      <div id="sidebar-panel-docs" class="hidden flex-1 overflow-y-auto p-3 space-y-4">
+        <div id="doc-list-container" class="space-y-3"></div>
+
+        <!-- Custom File / Rebuild Info Card -->
+        <div class="border border-[var(--border)] rounded-xl p-3 bg-[var(--card)] space-y-2">
+          <div class="text-xs font-semibold text-[var(--foreground)] flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-[var(--primary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span>任意のPDFを追加・更新</span>
+          </div>
+          <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+            LaTeX再ビルド後や、任意の日本語PDFを追加表示する場合は以下を実行してください：
+          </p>
+          <div class="bg-[var(--background)] border border-[var(--border)] rounded-lg p-2 font-mono text-xs select-all break-all text-[var(--foreground)]">
+            ./scripts/render-preview.sh
+          </div>
+          <label class="block pt-1">
+            <span class="sr-only">ページ画像を開く</span>
+            <input
+              id="input-custom-image"
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+            />
+            <span class="w-full py-1.5 px-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)] hover:opacity-90 text-[var(--foreground)] text-xs font-medium cursor-pointer flex items-center justify-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>ローカル画像を一時プレビュー</span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Viewport: PDF Page Canvas -->
+    <main
+      id="pdf-viewport"
+      class="flex-1 overflow-auto viewer-scroll bg-[var(--background)] p-4 sm:p-6 flex flex-col items-center relative"
+    >
+      <!-- Document Header Banner -->
+      <div
+        id="viewport-doc-banner"
+        class="w-full max-w-4xl mb-4 px-4 py-2.5 rounded-xl bg-[var(--card)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-2 shrink-0"
+      >
+        <div class="min-w-0">
+          <h1 id="banner-doc-title" class="text-sm font-semibold text-[var(--foreground)] truncate"></h1>
+          <p id="banner-doc-path" class="text-xs text-[var(--muted-foreground)] font-mono truncate"></p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] shrink-0">
+          <span id="banner-doc-info" class="px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--foreground)] font-medium"></span>
+        </div>
+      </div>
+
+      <!-- Pages Container -->
+      <div id="pages-stage" class="flex flex-col items-center gap-6 pb-12 w-full"></div>
+    </main>
+
+    <!-- Right Drawer: Extracted Japanese Text & Search -->
+    <aside
+      id="right-text-drawer"
+      class="hidden w-80 sm:w-96 bg-[var(--card)] border-l border-[var(--border)] flex flex-col shrink-0 overflow-hidden z-10"
+    >
+      <div class="p-3 border-b border-[var(--border)] flex items-center justify-between gap-2 shrink-0">
+        <div class="text-xs font-semibold text-[var(--foreground)] flex items-center gap-1.5">
+          <svg class="w-4 h-4 text-[var(--primary)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M4 7V4h16v3" />
+            <path d="M9 20h6" />
+            <path d="M12 4v16" />
+          </svg>
+          <span>日本語テキスト抽出・全文検索</span>
+        </div>
+        <button
+          id="btn-close-text"
+          type="button"
+          class="p-1 rounded hover:bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search Box -->
+      <div class="p-3 border-b border-[var(--border)] space-y-2 shrink-0 bg-[var(--background)]">
+        <div class="relative">
+          <input
+            id="input-text-search"
+            type="text"
+            placeholder="文書内の日本語・英語キーワードを検索..."
+            class="w-full text-xs bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+          />
+          <svg class="w-4 h-4 text-[var(--muted-foreground)] absolute left-2.5 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+          <span id="search-status-label">現在のページの抽出テキストを表示中</span>
+          <button
+            id="btn-copy-page-text"
+            type="button"
+            class="px-2 py-1 rounded bg-[var(--secondary)] hover:opacity-90 text-[var(--foreground)] font-medium transition"
+          >
+            テキストをコピー
+          </button>
+        </div>
+      </div>
+
+      <!-- Extracted Text Content -->
+      <div
+        id="extracted-text-container"
+        class="flex-1 overflow-y-auto p-3 space-y-3 select-text text-xs leading-relaxed font-mono whitespace-pre-wrap break-words text-[var(--foreground)]"
+      ></div>
+    </aside>
+  </div>
+
+  <!-- Embedded PDF Data Payload -->
+  <script>
+    const PDF_CATALOG = __PDF_CATALOG_JSON__;
+  </script>
+
+  <!-- Viewer Application Logic -->
+  <script>
+    (function () {
+      const state = {
+        docs: Array.isArray(PDF_CATALOG) ? PDF_CATALOG : [],
+        currentDocIndex: 0,
+        currentPage: 1,
+        viewMode: 'scroll', // 'scroll' | 'single'
+        zoomMode: 'fit-width', // 'fit-width' | 'fit-page' | number
+        sidebarOpen: true,
+        sidebarTab: 'thumbs', // 'thumbs' | 'docs'
+        textDrawerOpen: false,
+        searchQuery: '',
+        programmaticScroll: false,
+      };
+
+      // DOM Elements
+      const elDocSelect = document.getElementById('doc-select');
+      const elDocMetaBadge = document.getElementById('doc-meta-badge');
+      const elBtnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+      const elLeftSidebar = document.getElementById('left-sidebar');
+      const elTabBtnThumbs = document.getElementById('tab-btn-thumbs');
+      const elTabBtnDocs = document.getElementById('tab-btn-docs');
+      const elPanelThumbs = document.getElementById('sidebar-panel-thumbs');
+      const elPanelDocs = document.getElementById('sidebar-panel-docs');
+      const elDocListContainer = document.getElementById('doc-list-container');
+      const elBtnModeScroll = document.getElementById('btn-mode-scroll');
+      const elBtnModeSingle = document.getElementById('btn-mode-single');
+      const elBtnPrevPage = document.getElementById('btn-prev-page');
+      const elBtnNextPage = document.getElementById('btn-next-page');
+      const elInputPageNum = document.getElementById('input-page-num');
+      const elLabelTotalPages = document.getElementById('label-total-pages');
+      const elBtnZoomOut = document.getElementById('btn-zoom-out');
+      const elBtnZoomIn = document.getElementById('btn-zoom-in');
+      const elSelectZoom = document.getElementById('select-zoom');
+      const elBtnToggleText = document.getElementById('btn-toggle-text');
+      const elBtnCloseText = document.getElementById('btn-close-text');
+      const elRightTextDrawer = document.getElementById('right-text-drawer');
+      const elInputTextSearch = document.getElementById('input-text-search');
+      const elSearchStatusLabel = document.getElementById('search-status-label');
+      const elBtnCopyPageText = document.getElementById('btn-copy-page-text');
+      const elExtractedTextContainer = document.getElementById('extracted-text-container');
+      const elViewport = document.getElementById('pdf-viewport');
+      const elPagesStage = document.getElementById('pages-stage');
+      const elBannerTitle = document.getElementById('banner-doc-title');
+      const elBannerPath = document.getElementById('banner-doc-path');
+      const elBannerInfo = document.getElementById('banner-doc-info');
+      const elInputCustomImage = document.getElementById('input-custom-image');
+
+      let pageObserver = null;
+
+      function currentDoc() {
+        return state.docs[state.currentDocIndex] || null;
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function highlightText(text, query) {
+        const escaped = escapeHtml(text);
+        if (!query) return escaped;
+        const safeQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${safeQ})`, 'gi');
+        return escaped.replace(regex, '<mark class="search-hit">$1</mark>');
+      }
+
+      // Populate top dropdown and sidebar document list
+      function renderDocSelectors() {
+        elDocSelect.innerHTML = '';
+        const groups = {};
+        state.docs.forEach((doc, idx) => {
+          const cat = doc.category || 'その他';
+          if (!groups[cat]) groups[cat] = [];
+          groups[cat].push({ doc, idx });
+        });
+
+        Object.keys(groups).forEach((cat) => {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = cat;
+          groups[cat].forEach(({ doc, idx }) => {
+            const opt = document.createElement('option');
+            opt.value = String(idx);
+            opt.textContent = `${doc.title} (${doc.path}) [${doc.pages.length}頁]`;
+            if (idx === state.currentDocIndex) opt.selected = true;
+            optgroup.appendChild(opt);
+          });
+          elDocSelect.appendChild(optgroup);
+        });
+
+        // Sidebar Document List
+        elDocListContainer.innerHTML = '';
+        Object.keys(groups).forEach((cat) => {
+          const sec = document.createElement('div');
+          sec.className = 'space-y-1.5';
+          const header = document.createElement('div');
+          header.className = 'text-xs font-semibold text-[var(--muted-foreground)] px-1';
+          header.textContent = cat;
+          sec.appendChild(header);
+
+          groups[cat].forEach(({ doc, idx }) => {
+            const active = idx === state.currentDocIndex;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `w-full text-left p-2.5 rounded-xl border transition flex flex-col gap-1 ${
+              active
+                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-sm'
+                : 'bg-[var(--card)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--secondary)]'
+            }`;
+            btn.innerHTML = `
+              <div class="text-xs font-semibold truncate">${escapeHtml(doc.title)}</div>
+              <div class="text-xs opacity-80 font-mono truncate">${escapeHtml(doc.path)}</div>
+              <div class="text-xs opacity-75 flex items-center gap-2">
+                <span>${doc.pages.length} ページ</span>
+                <span>•</span>
+                <span>${escapeHtml(doc.sizeLabel || '')}</span>
+              </div>
+            `;
+            btn.addEventListener('click', () => {
+              selectDocument(idx);
+            });
+            sec.appendChild(btn);
+          });
+
+          elDocListContainer.appendChild(sec);
+        });
+      }
+
+      // Compute width style for each page based on zoomMode
+      function getPageWidthStyle() {
+        const viewportWidth = elViewport.clientWidth - 48; // account for padding
+        const viewportHeight = elViewport.clientHeight - 96;
+        if (state.zoomMode === 'fit-width') {
+          const w = Math.min(Math.max(viewportWidth, 320), 920);
+          return `${w}px`;
+        }
+        if (state.zoomMode === 'fit-page') {
+          // A4 aspect ratio is roughly 1 : 1.4142
+          const h = Math.max(viewportHeight, 360);
+          const w = Math.round(h / 1.4142);
+          return `${Math.min(w, viewportWidth)}px`;
+        }
+        const scale = parseFloat(state.zoomMode) || 1;
+        return `${Math.round(740 * scale)}px`;
+      }
+
+      function updateToolbarState() {
+        const doc = currentDoc();
+        const total = doc ? doc.pages.length : 0;
+
+        elLabelTotalPages.textContent = String(total);
+        elInputPageNum.max = String(Math.max(1, total));
+        elInputPageNum.value = String(state.currentPage);
+
+        elBtnPrevPage.disabled = state.currentPage <= 1;
+        elBtnNextPage.disabled = state.currentPage >= total;
+
+        // Mode buttons styling
+        const activeClasses = ['bg-[var(--primary)]', 'text-[var(--primary-foreground)]', 'shadow-sm'];
+        const inactiveClasses = ['text-[var(--muted-foreground)]', 'hover:bg-[var(--secondary)]', 'hover:text-[var(--foreground)]'];
+
+        if (state.viewMode === 'scroll') {
+          elBtnModeScroll.classList.add(...activeClasses);
+          elBtnModeScroll.classList.remove(...inactiveClasses);
+          elBtnModeSingle.classList.remove(...activeClasses);
+          elBtnModeSingle.classList.add(...inactiveClasses);
+        } else {
+          elBtnModeSingle.classList.add(...activeClasses);
+          elBtnModeSingle.classList.remove(...inactiveClasses);
+          elBtnModeScroll.classList.remove(...activeClasses);
+          elBtnModeScroll.classList.add(...inactiveClasses);
+        }
+
+        // Sidebar tabs styling
+        if (state.sidebarTab === 'thumbs') {
+          elTabBtnThumbs.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition text-center bg-[var(--primary)] text-[var(--primary-foreground)]';
+          elTabBtnDocs.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition text-center text-[var(--muted-foreground)] hover:bg-[var(--secondary)]';
+          elPanelThumbs.classList.remove('hidden');
+          elPanelDocs.classList.add('hidden');
+        } else {
+          elTabBtnDocs.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition text-center bg-[var(--primary)] text-[var(--primary-foreground)]';
+          elTabBtnThumbs.className = 'py-1.5 px-2 rounded-md text-xs font-semibold transition text-center text-[var(--muted-foreground)] hover:bg-[var(--secondary)]';
+          elPanelDocs.classList.remove('hidden');
+          elPanelThumbs.classList.add('hidden');
+        }
+
+        // Sidebar visibility
+        if (state.sidebarOpen) {
+          elLeftSidebar.classList.remove('hidden');
+        } else {
+          elLeftSidebar.classList.add('hidden');
+        }
+
+        // Right drawer visibility
+        if (state.textDrawerOpen) {
+          elRightTextDrawer.classList.remove('hidden');
+          elBtnToggleText.classList.add('bg-[var(--primary)]', 'text-[var(--primary-foreground)]');
+        } else {
+          elRightTextDrawer.classList.add('hidden');
+          elBtnToggleText.classList.remove('bg-[var(--primary)]', 'text-[var(--primary-foreground)]');
+        }
+
+        if (doc) {
+          elDocMetaBadge.textContent = `${doc.pages.length}頁 • ${doc.sizeLabel || ''}`;
+          elBannerTitle.textContent = doc.title;
+          elBannerPath.textContent = doc.path;
+          elBannerInfo.textContent = `${doc.category || 'PDF'} • 全${doc.pages.length}ページ`;
+        }
+      }
+
+      function highlightActiveThumbnail() {
+        const thumbs = elPanelThumbs.querySelectorAll('[data-thumb-page]');
+        thumbs.forEach((el) => {
+          const p = parseInt(el.getAttribute('data-thumb-page'), 10);
+          const imgWrap = el.querySelector('.thumb-img-wrap');
+          const badge = el.querySelector('.thumb-badge');
+          if (p === state.currentPage) {
+            imgWrap.classList.add('thumb-active');
+            badge.className = 'thumb-badge px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--primary)] text-[var(--primary-foreground)]';
+          } else {
+            imgWrap.classList.remove('thumb-active');
+            badge.className = 'thumb-badge px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--secondary)] text-[var(--muted-foreground)]';
+          }
+        });
+      }
+
+      function renderThumbnails() {
+        const doc = currentDoc();
+        elPanelThumbs.innerHTML = '';
+        if (!doc) return;
+
+        doc.pages.forEach((pageObj, idx) => {
+          const pageNum = idx + 1;
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.setAttribute('data-thumb-page', String(pageNum));
+          item.className = 'w-full flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-[var(--secondary)] transition group';
+          item.innerHTML = `
+            <div class="thumb-img-wrap w-36 bg-white rounded-lg overflow-hidden border border-[var(--border)] shadow-sm transition">
+              <img src="${pageObj.image}" alt="Page ${pageNum}" class="w-full h-auto block" loading="lazy" />
+            </div>
+            <span class="thumb-badge px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--secondary)] text-[var(--muted-foreground)]">
+              ページ ${pageNum}
+            </span>
+          `;
+          item.addEventListener('click', () => {
+            goToPage(pageNum, true);
+          });
+          elPanelThumbs.appendChild(item);
+        });
+
+        highlightActiveThumbnail();
+      }
+
+      function renderPages() {
+        const doc = currentDoc();
+        elPagesStage.innerHTML = '';
+        if (pageObserver) {
+          pageObserver.disconnect();
+          pageObserver = null;
+        }
+        if (!doc) return;
+
+        const widthCss = getPageWidthStyle();
+
+        if (state.viewMode === 'single') {
+          const pageObj = doc.pages[state.currentPage - 1];
+          if (!pageObj) return;
+          const card = createPageElement(pageObj, state.currentPage, doc.pages.length, widthCss);
+          elPagesStage.appendChild(card);
+        } else {
+          // Continuous scroll mode
+          pageObserver = new IntersectionObserver(
+            (entries) => {
+              if (state.programmaticScroll) return;
+              let bestEntry = null;
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  if (!bestEntry || entry.intersectionRatio > bestEntry.intersectionRatio) {
+                    bestEntry = entry;
+                  }
+                }
+              });
+              if (bestEntry) {
+                const p = parseInt(bestEntry.target.getAttribute('data-page-number'), 10);
+                if (p && p !== state.currentPage) {
+                  state.currentPage = p;
+                  updateToolbarState();
+                  highlightActiveThumbnail();
+                  renderExtractedTextPanel();
+                }
+              }
+            },
+            {
+              root: elViewport,
+              threshold: [0.25, 0.5, 0.75],
+            }
+          );
+
+          doc.pages.forEach((pageObj, idx) => {
+            const pageNum = idx + 1;
+            const card = createPageElement(pageObj, pageNum, doc.pages.length, widthCss);
+            elPagesStage.appendChild(card);
+            pageObserver.observe(card);
+          });
+        }
+      }
+
+      function createPageElement(pageObj, pageNum, totalPages, widthCss) {
+        const wrapper = document.createElement('div');
+        wrapper.setAttribute('data-page-number', String(pageNum));
+        wrapper.id = `pdf-page-${pageNum}`;
+        wrapper.style.width = widthCss;
+        wrapper.className = 'pdf-page-card flex flex-col items-center gap-2 transition-all duration-150 max-w-full';
+
+        wrapper.innerHTML = `
+          <div class="w-full bg-white rounded-lg overflow-hidden page-canvas-shadow border border-[var(--border)]">
+            <img
+              src="${pageObj.image}"
+              alt="ページ ${pageNum}"
+              class="w-full h-auto block select-none"
+              draggable="false"
+            />
+          </div>
+          <div class="text-xs text-[var(--muted-foreground)] font-medium">
+            — ${pageNum} / ${totalPages} —
+          </div>
+        `;
+        return wrapper;
+      }
+
+      function applyZoomResize() {
+        const widthCss = getPageWidthStyle();
+        const cards = elPagesStage.querySelectorAll('.pdf-page-card');
+        cards.forEach((c) => {
+          c.style.width = widthCss;
+        });
+      }
+
+      function renderExtractedTextPanel() {
+        const doc = currentDoc();
+        elExtractedTextContainer.innerHTML = '';
+        if (!doc) return;
+
+        const q = state.searchQuery.trim();
+        if (!q) {
+          const pageObj = doc.pages[state.currentPage - 1];
+          const txt = (pageObj && pageObj.text) ? pageObj.text.trim() : '';
+          elSearchStatusLabel.textContent = `ページ ${state.currentPage} / ${doc.pages.length} の抽出テキスト`;
+          const block = document.createElement('div');
+          block.className = 'p-3 rounded-lg bg-[var(--background)] border border-[var(--border)]';
+          block.textContent = txt || '（このページには抽出可能なテキストがありません）';
+          elExtractedTextContainer.appendChild(block);
+          return;
+        }
+
+        // Search across all pages in current document
+        let totalHits = 0;
+        const safeQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(safeQ, 'gi');
+
+        doc.pages.forEach((pageObj, idx) => {
+          const pageNum = idx + 1;
+          const raw = (pageObj.text || '').trim();
+          const matches = raw.match(regex);
+          if (matches && matches.length > 0) {
+            totalHits += matches.length;
+            const item = document.createElement('div');
+            item.className = 'rounded-xl border border-[var(--border)] bg-[var(--background)] overflow-hidden';
+            item.innerHTML = `
+              <button
+                type="button"
+                class="w-full px-3 py-1.5 bg-[var(--secondary)] text-left text-xs font-semibold flex items-center justify-between hover:opacity-90"
+              >
+                <span>ページ ${pageNum}</span>
+                <span class="px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs">${matches.length} 件一致</span>
+              </button>
+              <div class="p-3 text-xs leading-relaxed whitespace-pre-wrap">${highlightText(raw, q)}</div>
+            `;
+            item.querySelector('button').addEventListener('click', () => {
+              goToPage(pageNum, true);
+            });
+            elExtractedTextContainer.appendChild(item);
+          }
+        });
+
+        elSearchStatusLabel.textContent = `検索結果: 全 ${totalHits} 件`;
+        if (totalHits === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'p-4 text-center text-xs text-[var(--muted-foreground)]';
+          empty.textContent = `「${q}」に一致するテキストは見つかりませんでした。`;
+          elExtractedTextContainer.appendChild(empty);
+        }
+      }
+
+      function goToPage(pageNum, smoothScroll) {
+        const doc = currentDoc();
+        if (!doc) return;
+        const clamped = Math.max(1, Math.min(doc.pages.length, pageNum));
+        state.currentPage = clamped;
+        updateToolbarState();
+        highlightActiveThumbnail();
+        renderExtractedTextPanel();
+
+        if (state.viewMode === 'single') {
+          renderPages();
+          elViewport.scrollTop = 0;
+        } else {
+          const targetEl = document.getElementById(`pdf-page-${clamped}`);
+          if (targetEl) {
+            state.programmaticScroll = true;
+            targetEl.scrollIntoView({ behavior: smoothScroll ? 'smooth' : 'auto', block: 'start' });
+            setTimeout(() => {
+              state.programmaticScroll = false;
+            }, 450);
+          }
+        }
+      }
+
+      function selectDocument(index) {
+        if (index < 0 || index >= state.docs.length) return;
+        state.currentDocIndex = index;
+        state.currentPage = 1;
+        elDocSelect.value = String(index);
+        renderDocSelectors();
+        updateToolbarState();
+        renderThumbnails();
+        renderPages();
+        renderExtractedTextPanel();
+        elViewport.scrollTop = 0;
+      }
+
+      // Event Listeners
+      elDocSelect.addEventListener('change', (e) => {
+        selectDocument(parseInt(e.target.value, 10) || 0);
+      });
+
+      elBtnToggleSidebar.addEventListener('click', () => {
+        state.sidebarOpen = !state.sidebarOpen;
+        updateToolbarState();
+        setTimeout(applyZoomResize, 50);
+      });
+
+      elTabBtnThumbs.addEventListener('click', () => {
+        state.sidebarTab = 'thumbs';
+        updateToolbarState();
+      });
+
+      elTabBtnDocs.addEventListener('click', () => {
+        state.sidebarTab = 'docs';
+        updateToolbarState();
+      });
+
+      elBtnModeScroll.addEventListener('click', () => {
+        if (state.viewMode !== 'scroll') {
+          state.viewMode = 'scroll';
+          updateToolbarState();
+          renderPages();
+          goToPage(state.currentPage, false);
+        }
+      });
+
+      elBtnModeSingle.addEventListener('click', () => {
+        if (state.viewMode !== 'single') {
+          state.viewMode = 'single';
+          updateToolbarState();
+          renderPages();
+        }
+      });
+
+      elBtnPrevPage.addEventListener('click', () => {
+        goToPage(state.currentPage - 1, true);
+      });
+
+      elBtnNextPage.addEventListener('click', () => {
+        goToPage(state.currentPage + 1, true);
+      });
+
+      elInputPageNum.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+          goToPage(val, true);
+        } else {
+          elInputPageNum.value = String(state.currentPage);
+        }
+      });
+
+      elSelectZoom.addEventListener('change', (e) => {
+        state.zoomMode = e.target.value;
+        applyZoomResize();
+      });
+
+      const zoomLevels = [0.75, 1, 1.25, 1.5, 2];
+      elBtnZoomIn.addEventListener('click', () => {
+        let cur = parseFloat(state.zoomMode);
+        if (isNaN(cur)) cur = 1;
+        const next = zoomLevels.find((z) => z > cur) || 2;
+        state.zoomMode = String(next);
+        elSelectZoom.value = String(next);
+        applyZoomResize();
+      });
+
+      elBtnZoomOut.addEventListener('click', () => {
+        let cur = parseFloat(state.zoomMode);
+        if (isNaN(cur)) cur = 1;
+        const prev = [...zoomLevels].reverse().find((z) => z < cur) || 0.75;
+        state.zoomMode = String(prev);
+        elSelectZoom.value = String(prev);
+        applyZoomResize();
+      });
+
+      elBtnToggleText.addEventListener('click', () => {
+        state.textDrawerOpen = !state.textDrawerOpen;
+        updateToolbarState();
+        renderExtractedTextPanel();
+        setTimeout(applyZoomResize, 50);
+      });
+
+      elBtnCloseText.addEventListener('click', () => {
+        state.textDrawerOpen = false;
+        updateToolbarState();
+        setTimeout(applyZoomResize, 50);
+      });
+
+      elInputTextSearch.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value || '';
+        renderExtractedTextPanel();
+      });
+
+      elBtnCopyPageText.addEventListener('click', () => {
+        const doc = currentDoc();
+        if (!doc) return;
+        const pageObj = doc.pages[state.currentPage - 1];
+        const txt = (pageObj && pageObj.text) ? pageObj.text : '';
+        if (navigator.clipboard && txt) {
+          navigator.clipboard.writeText(txt).then(() => {
+            const orig = elBtnCopyPageText.textContent;
+            elBtnCopyPageText.textContent = 'コピー完了!';
+            setTimeout(() => {
+              elBtnCopyPageText.textContent = orig;
+            }, 1500);
+          });
+        }
+      });
+
+      // Local custom image preview loader
+      elInputCustomImage.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        const pages = [];
+        let loaded = 0;
+        files.forEach((file, idx) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            pages[idx] = {
+              image: ev.target.result,
+              text: `ローカル画像ファイル: ${file.name}`,
+            };
+            loaded++;
+            if (loaded === files.length) {
+              const newDoc = {
+                title: files[0].name,
+                path: 'ローカル選択ファイル',
+                category: 'カスタム読み込み',
+                sizeLabel: `${Math.round(files.reduce((a, b) => a + b.size, 0) / 1024)} KB`,
+                pages,
+              };
+              state.docs.push(newDoc);
+              selectDocument(state.docs.length - 1);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      // Keyboard navigation
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+          return;
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goToPage(state.currentPage - 1, true);
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          goToPage(state.currentPage + 1, true);
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          state.viewMode = state.viewMode === 'scroll' ? 'single' : 'scroll';
+          updateToolbarState();
+          renderPages();
+        } else if (e.key === 'b' || e.key === 'B') {
+          e.preventDefault();
+          state.sidebarOpen = !state.sidebarOpen;
+          updateToolbarState();
+          setTimeout(applyZoomResize, 50);
+        } else if (e.key === 't' || e.key === 'T') {
+          e.preventDefault();
+          state.textDrawerOpen = !state.textDrawerOpen;
+          updateToolbarState();
+          renderExtractedTextPanel();
+          setTimeout(applyZoomResize, 50);
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        if (state.zoomMode === 'fit-width' || state.zoomMode === 'fit-page') {
+          applyZoomResize();
+        }
+      });
+
+      // Initial boot
+      renderDocSelectors();
+      updateToolbarState();
+      renderThumbnails();
+      renderPages();
+      renderExtractedTextPanel();
+    })();
+  </script>
+</body>
+</html>
